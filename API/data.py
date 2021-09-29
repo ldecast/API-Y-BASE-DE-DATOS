@@ -5,6 +5,22 @@ DBHOST = 'localhost'
 DBNAME = 'blockbuster'
 DBUSER = 'ldecast'
 DBPASS = 'ldecast'
+C1 = """SELECT COUNT(*) FROM Inventario 
+INNER JOIN Entrega ON Entrega.identrega = Inventario.identrega 
+WHERE Entrega.titulo = 'SUGAR WONKA';"""
+C2 = """SELECT 
+    cliente.nombre,
+    cliente.apellido,
+    sum(renta.montopagar) AS pagototal
+FROM Renta 
+INNER JOIN cliente ON cliente.idcliente = renta.idcliente 
+GROUP BY cliente.nombre, cliente.apellido
+HAVING COUNT(*) >= 40;"""
+C3 = """SELECT
+    CONCAT(nombre, ' ', apellido) AS nombrecompleto
+FROM Actor
+WHERE apellido LIKE '%son%' OR apellido LIKE 'Son%'
+ORDER BY nombre;"""
 
 DELETETMP = """DELETE FROM temporal;"""
 DELETEMODEL = """DROP TABLE ActorEntrega;
