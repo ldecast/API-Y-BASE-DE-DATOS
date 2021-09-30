@@ -96,6 +96,71 @@ FROM RENTAPAIS
 INNER JOIN RENTACIUDAD ON RENTACIUDAD.idpais = RENTAPAIS.idpais
 INNER JOIN CIUDADESPAIS ON CIUDADESPAIS.idpais = RENTAPAIS.idpais;"""
 
+C8 = """with RENTASTOTALES as(
+    SELECT COUNT(renta.montopagar) AS rentas, pais.nombre, pais.idpais FROM renta
+    INNER JOIN cliente ON cliente.idcliente = renta.idcliente
+    INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
+    INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
+    INNER JOIN pais ON ciudad.idpais = pais.idpais
+    GROUP BY pais.idpais, pais.nombre
+), RENTASSPORTS as(
+    SELECT COUNT(renta.montopagar) AS rentas, pais.nombre, pais.idpais FROM renta
+    INNER JOIN cliente ON cliente.idcliente = renta.idcliente
+    INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
+    INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
+    INNER JOIN pais ON ciudad.idpais = pais.idpais
+    INNER JOIN pelicula ON renta.idpelicula = pelicula.idpelicula
+    INNER JOIN entrega ON entrega.identrega = pelicula.identrega
+    INNER JOIN categoriaentrega ON categoriaentrega.identrega = entrega.identrega
+    INNER JOIN categoria ON categoriaentrega.idcategoria = categoria.idcategoria
+    GROUP BY pais.idpais, pais.nombre, categoria.categoria
+    HAVING categoria.categoria = 'Sports'
+)SELECT RENTASTOTALES.nombre, (CAST(RENTASSPORTS.rentas AS FLOAT)/RENTASTOTALES.rentas)*100 AS porcentaje
+FROM RENTASTOTALES 
+INNER JOIN RENTASSPORTS ON RENTASTOTALES.idpais = RENTASSPORTS.idpais;"""
+C9 = """with CIUDADESLISTADO as(
+    SELECT ciudad.nombre, ciudad.idciudad, ciudad.idpais FROM Ciudad
+    INNER JOIN Pais ON pais.idpais = ciudad.idpais
+    WHERE pais.nombre = 'United States'
+),RENTASCIUDADES as(
+    SELECT COUNT(renta.montopagar) AS rentas, ciudad.nombre, ciudad.idciudad, ciudad.idpais FROM renta
+    INNER JOIN cliente ON cliente.idcliente = renta.idcliente
+    INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
+    INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
+    INNER JOIN pais ON ciudad.idpais = pais.idpais
+    GROUP BYciudad.nombre, ciudad.idciudad, ciudad.idpais, pais.nombre
+    HAVING pais.nombre = 'United States'
+),RENTASDAYTON as(
+    SELECT COUNT(renta.montopagar) AS rentas, ciudad.nombre, ciudad.idciudad, ciudad.idpais FROM renta
+    INNER JOIN cliente ON cliente.idcliente = renta.idcliente
+    INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
+    INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
+    GROUP BYciudad.nombre, ciudad.idciudad, ciudad.idpais
+    HAVING ciudad.nombre = 'Dayton'
+)SELECT CIUDADESLISTADO.nombre, RENTASCIUDADES.rentas FROM CIUDADESLISTADO
+INNER JOIN RENTASCIUDADES ON CIUDADESLISTADO.idciudad = RENTASCIUDADES.idciudad
+INNER JOIN RENTASDAYTON ON CIUDADESLISTADO.idpais = RENTASDAYTON.idpais
+WHERE RENTASCIUDADES.rentas > RENTASDAYTON.rentas;"""
+C10 = """with TOPS as(
+SELECT 
+    ciudad.nombre AS ciudad,
+    pais.nombre AS pais,
+    categoria.categoria,
+    COUNT(categoria.categoria) AS contador,
+    rownumber() over (partition BY ciudad.nombre ORDER BY COUNT(categoria.categoria) desc) AS rank
+FROM renta
+INNER JOIN cliente ON cliente.idcliente = renta.idcliente
+INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
+INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
+INNER JOIN pais ON ciudad.idpais = pais.idpais
+INNER JOIN pelicula ON renta.idpelicula = pelicula.idpelicula
+INNER JOIN entrega ON entrega.identrega = pelicula.identrega
+INNER JOIN categoriaentrega ON categoriaentrega.identrega = entrega.identrega
+INNER JOIN categoria ON categoriaentrega.idcategoria = categoria.idcategoria
+GROUP BYciudad.idciudad, ciudad.nombre, pais.nombre, categoria.categoria
+)SELECT ciudad, pais, contador FROM TOPS 
+WHERE rank = 1
+AND categoria = 'Horror';"""
 DELETETMP = """DELETE FROM temporal;"""
 DELETEMODEL = """DROP TABLE ActorEntrega;
 DROP TABLE Actor;
