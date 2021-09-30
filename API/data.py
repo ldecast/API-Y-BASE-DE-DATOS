@@ -21,6 +21,80 @@ C3 = """SELECT
 FROM Actor
 WHERE apellido LIKE '%son%' OR apellido LIKE 'Son%'
 ORDER BY nombre;"""
+C4 = """SELECT DISTINCT entrega.lanzamiento, actor.nombre, actor.apellido FROM actorentrega 
+INNER JOIN entrega ON entrega.identrega = actorentrega.identrega
+INNER JOIN actor ON actor.idactor = actorentrega.idactor
+WHERE entrega.descripcion LIKE '%Crocodile%' OR 
+entrega.descripcion LIKE '%Shark%'
+ORDER BY actor.apellido ASC;"""
+C5 = """with COSTOPAIS AS (
+    SELECT sum(renta.montopagar)as suma, pais.nombre FROM pais
+    INNER JOIN ciudad ON pais.idpais = ciudad.idpais
+    INNER JOIN direccion ON ciudad.idciudad = direccion.idciudad
+    INNER JOIN cliente ON cliente.iddireccion = direccion.iddireccion
+    INNER JOIN renta ON renta.idcliente = cliente.idcliente
+    GROUP BYpais.idpais
+), AUXILIAR as(
+    SELECT
+        pais.nombre AS pais,
+        cliente.nombre,
+        cliente.apellido,
+        sum(renta.montopagar) AS pagopersona,
+        COSTOPAIS.suma AS pagopais,
+        COUNT(*) AS rentas,
+        (sum(renta.montopagar)/COSTOPAIS.suma)*100 AS porcentaje,
+        rownumber() over (partition BY pais.nombre ORDER BY COUNT(*) desc) AS rank
+    FROM Renta cross join COSTOPAIS
+    INNER JOIN cliente ON cliente.idcliente = renta.idcliente
+    INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
+    INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
+    INNER JOIN pais ON ciudad.idpais = pais.idpais 
+    GROUP BY cliente.nombre, cliente.apellido, COSTOPAIS.suma, COSTOPAIS.nombre, pais.nombre
+    HAVING COSTOPAIS.nombre = pais.nombre
+    ORDER BY COUNT(*) desc
+) SELECT AUXILIAR.pais, AUXILIAR.nombre,AUXILIAR.apellido, AUXILIAR.porcentaje FROM COSTOPAIS 
+INNER JOIN AUXILIAR ON COSTOPAIS.nombre = AUXILIAR.pais
+WHERE AUXILIAR.rank = 1;"""
+C6 = """with CLIENTESCIUDAD as(
+    SELECT COUNT(cliente.idcliente)as clientes, ciudad.nombre AS nombre, ciudad.idpais FROM Ciudad
+    INNER JOIN Direccion ON Direccion.idciudad = Ciudad.idciudad
+    INNER JOIN Cliente ON Cliente.iddireccion = Direccion.iddireccion
+    GROUP BYciudad.idpais, ciudad.nombre
+), CLIENTESPAIS as(
+    SELECT COUNT(cliente.idcliente)as clientes, pais.nombre AS nombre, pais.idpais FROM Pais
+    INNER JOIN Ciudad ON Ciudad.idpais = Pais.idpais
+    INNER JOIN Direccion ON Direccion.idciudad = Ciudad.idciudad
+    INNER JOIN Cliente ON Cliente.iddireccion = Direccion.iddireccion
+    GROUP BYpais.nombre, pais.idpais
+)SELECT 
+CLIENTESCIUDAD.nombre AS nombreciudad,
+CLIENTESCIUDAD.clientes AS clientesciudad,
+CLIENTESPAIS.nombre AS nombrepais,
+CLIENTESPAIS.clientes AS clientespais, 
+(CAST(CLIENTESCIUDAD.clientes AS FLOAT)/CLIENTESPAIS.clientes)*100 AS porcentaje
+FROM CLIENTESCIUDAD
+INNER JOIN CLIENTESPAIS ON CLIENTESCIUDAD.idpais = CLIENTESPAIS.idpais;"""
+C7 = """with RENTAPAIS AS (   
+    SELECT COUNT(renta.montopagar) AS rentas, pais.nombre, pais.idpais FROM renta
+    INNER JOIN cliente ON cliente.idcliente = renta.idcliente
+    INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
+    INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
+    INNER JOIN pais ON ciudad.idpais = pais.idpais
+    GROUP BY pais.nombre, pais.idpais
+), RENTACIUDAD as(
+    SELECT COUNT(renta.montopagar) AS rentas, ciudad.nombre, ciudad.idpais FROM renta
+    INNER JOIN cliente ON cliente.idcliente = renta.idcliente
+    INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
+    INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
+    GROUP BYciudad.idciudad, ciudad.nombre, ciudad.idpais
+), CIUDADESPAIS AS (
+    SELECT COUNT(*) AS cantidad, pais.idpais FROM pais
+    INNER JOIN ciudad ON ciudad.idpais = pais.idpais
+    GROUP BYciudad.idpais, pais.idpais
+)SELECT RENTAPAIS.nombre AS nombrepais, RENTACIUDAD.nombre AS nombreciudad, CAST(RENTACIUDAD.rentas AS FLOAT)/CIUDADESPAIS.cantidad AS promedio
+FROM RENTAPAIS
+INNER JOIN RENTACIUDAD ON RENTACIUDAD.idpais = RENTAPAIS.idpais
+INNER JOIN CIUDADESPAIS ON CIUDADESPAIS.idpais = RENTAPAIS.idpais;"""
 
 DELETETMP = """DELETE FROM temporal;"""
 DELETEMODEL = """DROP TABLE ActorEntrega;
