@@ -69,12 +69,6 @@ async def consulta7():
     return jsonify(consulta)
 
 
-@app.route('/consulta72', methods=['GET'])
-async def consulta72():
-    consulta = await connection(C72)
-    return jsonify(consulta)
-
-
 @app.route('/consulta8', methods=['GET'])
 async def consulta8():
     consulta = await connection(C8)
