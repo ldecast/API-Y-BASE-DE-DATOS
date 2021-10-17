@@ -54,8 +54,8 @@ WHERE paistienda != '-'
     );
 -- actor
 INSERT INTO Actor (nombre, apellido)
-SELECT DISTINCT SPLITPART(actorpelicula, ' ', 1),
-    SPLITPART(actorpelicula, ' ', 2)
+SELECT DISTINCT SPLIT_PART(actorpelicula, ' ', 1),
+    SPLIT_PART(actorpelicula, ' ', 2)
 FROM Temporal
 WHERE actorpelicula != '-';
 -- tipo empleado
@@ -221,8 +221,8 @@ INSERT INTO Cliente(
         activo,
         idtiendafavorita
     )
-SELECT DISTINCT SPLITPART(nombrecliente, ' ', 1),
-    SPLITPART(nombrecliente, ' ', 2),
+SELECT DISTINCT SPLIT_PART(nombrecliente, ' ', 1),
+    SPLIT_PART(nombrecliente, ' ', 2),
     correocliente,
     (
         SELECT iddireccion
@@ -238,7 +238,7 @@ SELECT DISTINCT SPLITPART(nombrecliente, ' ', 1),
     )
 FROM Temporal
 WHERE nombrecliente != '-'
-    AND SPLITPART(nombrecliente, ' ', 1) not in (
+    AND SPLIT_PART(nombrecliente, ' ', 1) not in (
         SELECT nombre
         FROM Cliente
     );
@@ -252,8 +252,8 @@ INSERT INTO Empleado(
         idtipo,
         idusuarioempleado
     )
-SELECT DISTINCT SPLITPART(nombreempleado, ' ', 1),
-    SPLITPART(nombreempleado, ' ', 2),
+SELECT DISTINCT SPLIT_PART(nombreempleado, ' ', 1),
+    SPLIT_PART(nombreempleado, ' ', 2),
     (
         SELECT iddireccion
         FROM Direccion
@@ -277,7 +277,7 @@ SELECT DISTINCT SPLITPART(nombreempleado, ' ', 1),
     )
 FROM Temporal
 WHERE nombreempleado != '-'
-    AND SPLITPART(nombreempleado, ' ', 1) not in (
+    AND SPLIT_PART(nombreempleado, ' ', 1) not in (
         SELECT nombre
         FROM Empleado
     );

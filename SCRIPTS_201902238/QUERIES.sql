@@ -50,7 +50,7 @@ AUXILIAR as(
         COSTOPAIS.suma AS pagopais,
         COUNT(*) AS rentas,
         (sum(renta.montopagar) / COSTOPAIS.suma) * 100 AS porcentaje,
-        rownumber() over (
+        ROW_NUMBER() over (
             partition BY pais.nombre
             ORDER BY COUNT(*) desc
         ) AS rank
@@ -233,7 +233,7 @@ with TOPS as(
         pais.nombre AS pais,
         categoria.categoria,
         COUNT(categoria.categoria) AS contador,
-        rownumber() over (
+        ROW_NUMBER() over (
             partition BY ciudad.nombre
             ORDER BY COUNT(categoria.categoria) desc
         ) AS rank

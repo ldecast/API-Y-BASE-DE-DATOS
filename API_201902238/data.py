@@ -5,7 +5,7 @@ DBHOST = 'localhost'
 DBNAME = 'blockbuster'
 DBUSER = 'ldecast'
 DBPASS = 'ldecast'
-C1 = """SELECT COUNT(*) FROM Inventario 
+C1 = """SELECT * FROM Inventario 
 INNER JOIN Entrega ON Entrega.identrega = Inventario.identrega 
 WHERE Entrega.titulo = 'SUGAR WONKA';"""
 C2 = """SELECT 
@@ -33,7 +33,7 @@ C5 = """with COSTOPAIS AS (
     INNER JOIN direccion ON ciudad.idciudad = direccion.idciudad
     INNER JOIN cliente ON cliente.iddireccion = direccion.iddireccion
     INNER JOIN renta ON renta.idcliente = cliente.idcliente
-    GROUP BYpais.idpais
+    GROUP BY pais.idpais
 ), AUXILIAR as(
     SELECT
         pais.nombre AS pais,
@@ -43,7 +43,7 @@ C5 = """with COSTOPAIS AS (
         COSTOPAIS.suma AS pagopais,
         COUNT(*) AS rentas,
         (sum(renta.montopagar)/COSTOPAIS.suma)*100 AS porcentaje,
-        rownumber() over (partition BY pais.nombre ORDER BY COUNT(*) desc) AS rank
+        ROW_NUMBER() over (partition BY pais.nombre ORDER BY COUNT(*) desc) AS rank
     FROM Renta cross join COSTOPAIS
     INNER JOIN cliente ON cliente.idcliente = renta.idcliente
     INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
@@ -59,13 +59,13 @@ C6 = """with CLIENTESCIUDAD as(
     SELECT COUNT(cliente.idcliente)as clientes, ciudad.nombre AS nombre, ciudad.idpais FROM Ciudad
     INNER JOIN Direccion ON Direccion.idciudad = Ciudad.idciudad
     INNER JOIN Cliente ON Cliente.iddireccion = Direccion.iddireccion
-    GROUP BYciudad.idpais, ciudad.nombre
+    GROUP BY ciudad.idpais, ciudad.nombre
 ), CLIENTESPAIS as(
     SELECT COUNT(cliente.idcliente)as clientes, pais.nombre AS nombre, pais.idpais FROM Pais
     INNER JOIN Ciudad ON Ciudad.idpais = Pais.idpais
     INNER JOIN Direccion ON Direccion.idciudad = Ciudad.idciudad
     INNER JOIN Cliente ON Cliente.iddireccion = Direccion.iddireccion
-    GROUP BYpais.nombre, pais.idpais
+    GROUP BY pais.nombre, pais.idpais
 )SELECT 
 CLIENTESCIUDAD.nombre AS nombreciudad,
 CLIENTESCIUDAD.clientes AS clientesciudad,
@@ -86,11 +86,11 @@ C7 = """with RENTAPAIS AS (
     INNER JOIN cliente ON cliente.idcliente = renta.idcliente
     INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
     INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
-    GROUP BYciudad.idciudad, ciudad.nombre, ciudad.idpais
+    GROUP BY ciudad.idciudad, ciudad.nombre, ciudad.idpais
 ), CIUDADESPAIS AS (
     SELECT COUNT(*) AS cantidad, pais.idpais FROM pais
     INNER JOIN ciudad ON ciudad.idpais = pais.idpais
-    GROUP BYciudad.idpais, pais.idpais
+    GROUP BY ciudad.idpais, pais.idpais
 )SELECT RENTAPAIS.nombre AS nombrepais, RENTACIUDAD.nombre AS nombreciudad, CAST(RENTACIUDAD.rentas AS FLOAT)/CIUDADESPAIS.cantidad AS promedio
 FROM RENTAPAIS
 INNER JOIN RENTACIUDAD ON RENTACIUDAD.idpais = RENTAPAIS.idpais
@@ -128,14 +128,14 @@ C9 = """with CIUDADESLISTADO as(
     INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
     INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
     INNER JOIN pais ON ciudad.idpais = pais.idpais
-    GROUP BYciudad.nombre, ciudad.idciudad, ciudad.idpais, pais.nombre
+    GROUP BY ciudad.nombre, ciudad.idciudad, ciudad.idpais, pais.nombre
     HAVING pais.nombre = 'United States'
 ),RENTASDAYTON as(
     SELECT COUNT(renta.montopagar) AS rentas, ciudad.nombre, ciudad.idciudad, ciudad.idpais FROM renta
     INNER JOIN cliente ON cliente.idcliente = renta.idcliente
     INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
     INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
-    GROUP BYciudad.nombre, ciudad.idciudad, ciudad.idpais
+    GROUP BY ciudad.nombre, ciudad.idciudad, ciudad.idpais
     HAVING ciudad.nombre = 'Dayton'
 )SELECT CIUDADESLISTADO.nombre, RENTASCIUDADES.rentas FROM CIUDADESLISTADO
 INNER JOIN RENTASCIUDADES ON CIUDADESLISTADO.idciudad = RENTASCIUDADES.idciudad
@@ -147,7 +147,7 @@ SELECT
     pais.nombre AS pais,
     categoria.categoria,
     COUNT(categoria.categoria) AS contador,
-    rownumber() over (partition BY ciudad.nombre ORDER BY COUNT(categoria.categoria) desc) AS rank
+    ROW_NUMBER() over (partition BY ciudad.nombre ORDER BY COUNT(categoria.categoria) desc) AS rank
 FROM renta
 INNER JOIN cliente ON cliente.idcliente = renta.idcliente
 INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
@@ -157,7 +157,7 @@ INNER JOIN pelicula ON renta.idpelicula = pelicula.idpelicula
 INNER JOIN entrega ON entrega.identrega = pelicula.identrega
 INNER JOIN categoriaentrega ON categoriaentrega.identrega = entrega.identrega
 INNER JOIN categoria ON categoriaentrega.idcategoria = categoria.idcategoria
-GROUP BYciudad.idciudad, ciudad.nombre, pais.nombre, categoria.categoria
+GROUP BY ciudad.idciudad, ciudad.nombre, pais.nombre, categoria.categoria
 )SELECT ciudad, pais, contador FROM TOPS 
 WHERE rank = 1
 AND categoria = 'Horror';"""
@@ -388,7 +388,7 @@ SELECT DISTINCT paistienda FROM Temporal WHERE paistienda != '-'
 AND paistienda not in (SELECT nombre FROM Pais);
 -- actor
 INSERT INTO Actor (nombre, apellido)
-SELECT DISTINCT SPLITPART(actorpelicula, ' ', 1), SPLITPART(actorpelicula, ' ', 2) FROM Temporal WHERE actorpelicula != '-';
+SELECT DISTINCT SPLIT_PART(actorpelicula, ' ', 1), SPLIT_PART(actorpelicula, ' ', 2) FROM Temporal WHERE actorpelicula != '-';
 -- tipo empleado
 INSERT INTO TipoEmpleado (tipo) values ('encargado');
 INSERT INTO TipoEmpleado (tipo) values ('normal');
@@ -453,15 +453,15 @@ INSERT INTO Cliente(
     idtiendafavorita
 )
 SELECT DISTINCT 
-    SPLITPART(nombrecliente, ' ',1),
-    SPLITPART(nombrecliente, ' ',2),
+    SPLIT_PART(nombrecliente, ' ',1),
+    SPLIT_PART(nombrecliente, ' ',2),
     correocliente, 
     (SELECT iddireccion FROM Direccion WHERE direccion = Temporal.direccioncliente),
     CAST(fechacreacion AS DATE),
     clienteactivo, 
     (SELECT idtienda FROM Tienda WHERE nombre = Temporal.tiendapreferida)
 FROM Temporal WHERE nombrecliente != '-'
-AND SPLITPART(nombrecliente, ' ',1) not in (SELECT nombre FROM Cliente);
+AND SPLIT_PART(nombrecliente, ' ',1) not in (SELECT nombre FROM Cliente);
 -- empleado
 INSERT INTO Empleado(
     nombre,
@@ -473,15 +473,15 @@ INSERT INTO Empleado(
     idusuarioempleado
 )
 SELECT DISTINCT
-    SPLITPART(nombreempleado, ' ',1),
-    SPLITPART(nombreempleado, ' ',2),
+    SPLIT_PART(nombreempleado, ' ',1),
+    SPLIT_PART(nombreempleado, ' ',2),
     (SELECT iddireccion FROM Direccion WHERE direccion = Temporal.direccionempleado),
     correoempleado,
     empleadoactivo,
     (case when nombreempleado in (SELECT encargadotienda FROM Temporal) then 1 else 2 end),
     (SELECT idusuarioempleado FROM UsuarioEmpleado WHERE usuario = Temporal.usuarioempleado)
 FROM Temporal WHERE nombreempleado != '-'
-AND SPLITPART(nombreempleado, ' ',1) not in (SELECT nombre FROM Empleado);
+AND SPLIT_PART(nombreempleado, ' ',1) not in (SELECT nombre FROM Empleado);
 -- pelicula 
 INSERT INTO Pelicula(
     diasrenta,
@@ -543,7 +543,7 @@ FROM Temporal WHERE nombrepelicula != '-' AND nombretienda != '-';"""
 
 
 def sel(query, conection):
-    cursor = conection.cursor(cursorfactory=psycopg2.extras.DictCursor)
+    cursor = conection.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cursor.execute(query)
     salida = 0
     try:
@@ -555,7 +555,7 @@ def sel(query, conection):
 
 
 def ins(query, conection):
-    cursor = conection.cursor(cursorfactory=psycopg2.extras.DictCursor)
+    cursor = conection.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cursor.execute(query)
     cursor.close()
 

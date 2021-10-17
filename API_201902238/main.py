@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 async def root():
-    print("Hello from flask!")
+    return "Hello from flask!"
 
 ###################################################### Cargar ######################################################
 
@@ -89,17 +89,16 @@ async def consulta10():
 ###################################################### Eliminación ######################################################
 
 
+@app.route('/eliminarModelo', methods=['GET'])
+async def eliminarModelo():
+    await connection(DELETEMODEL)
+    return {"Status": "Modelo eliminado."}
+
+
 @app.route('/eliminarTemporal', methods=['GET'])
 async def eliminarTemporal():
     await connection(DELETETMP)
     return {"Status": "Tabla temporal eliminada."}
 
 
-@app.route('/elminarModelo', methods=['GET'])
-async def eliminarModelo():
-    await connection(DELETEMODEL)
-    return {"Status": "Modelo eliminado."}
-
-
-if __name__ == 'main':
-    app.run()
+app.run()

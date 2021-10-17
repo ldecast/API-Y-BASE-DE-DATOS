@@ -1,6 +1,5 @@
 -- CREATE DATABASE blockbuster;
 USE blockbuster;
-
 CREATE TABLE Temporal(
     nombrecliente VARCHAR(50),
     correocliente VARCHAR(60),
@@ -178,7 +177,6 @@ CREATE TABLE ActorEntrega(
 -- insertar a temporal
 COPY Temporal
 FROM '/home/ldecast/Documentos/VI Semestre/Archivos/Práctica1/BlockbusterData.csv' DELIMITER ';';
-
 UPDATE Temporal
 SET codigopostalcliente = null
 WHERE codigopostalcliente = '-';
@@ -234,8 +232,8 @@ WHERE paistienda != '-'
     );
 -- actor
 INSERT INTO Actor (nombre, apellido)
-SELECT DISTINCT SPLITPART(actorpelicula, ' ', 1),
-    SPLITPART(actorpelicula, ' ', 2)
+SELECT DISTINCT SPLIT_PART(actorpelicula, ' ', 1),
+    SPLIT_PART(actorpelicula, ' ', 2)
 FROM Temporal
 WHERE actorpelicula != '-';
 -- tipo empleado
@@ -401,8 +399,8 @@ INSERT INTO Cliente(
         activo,
         idtiendafavorita
     )
-SELECT DISTINCT SPLITPART(nombrecliente, ' ', 1),
-    SPLITPART(nombrecliente, ' ', 2),
+SELECT DISTINCT SPLIT_PART(nombrecliente, ' ', 1),
+    SPLIT_PART(nombrecliente, ' ', 2),
     correocliente,
     (
         SELECT iddireccion
@@ -418,7 +416,7 @@ SELECT DISTINCT SPLITPART(nombrecliente, ' ', 1),
     )
 FROM Temporal
 WHERE nombrecliente != '-'
-    AND SPLITPART(nombrecliente, ' ', 1) not in (
+    AND SPLIT_PART(nombrecliente, ' ', 1) not in (
         SELECT nombre
         FROM Cliente
     );
@@ -432,8 +430,8 @@ INSERT INTO Empleado(
         idtipo,
         idusuarioempleado
     )
-SELECT DISTINCT SPLITPART(nombreempleado, ' ', 1),
-    SPLITPART(nombreempleado, ' ', 2),
+SELECT DISTINCT SPLIT_PART(nombreempleado, ' ', 1),
+    SPLIT_PART(nombreempleado, ' ', 2),
     (
         SELECT iddireccion
         FROM Direccion
@@ -457,7 +455,7 @@ SELECT DISTINCT SPLITPART(nombreempleado, ' ', 1),
     )
 FROM Temporal
 WHERE nombreempleado != '-'
-    AND SPLITPART(nombreempleado, ' ', 1) not in (
+    AND SPLIT_PART(nombreempleado, ' ', 1) not in (
         SELECT nombre
         FROM Empleado
     );
@@ -617,7 +615,8 @@ with COSTOPAIS AS (
         INNER JOIN ciudad ON pais.idpais = ciudad.idpais
         INNER JOIN direccion ON ciudad.idciudad = direccion.idciudad
         INNER JOIN cliente ON cliente.iddireccion = direccion.iddireccion
-        INNER JOIN renta ON renta.idcliente = cliente.idcliente GROUP BYpais.idpais
+        INNER JOIN renta ON renta.idcliente = cliente.idcliente
+    GROUP BY pais.idpais
 )
 SELECT cliente.nombre,
     cliente.apellido,
@@ -646,7 +645,8 @@ with CLIENTESCIUDAD as(
         ciudad.idpais
     FROM Ciudad
         INNER JOIN Direccion ON Direccion.idciudad = Ciudad.idciudad
-        INNER JOIN Cliente ON Cliente.iddireccion = Direccion.iddireccion GROUP BYciudad.idpais,
+        INNER JOIN Cliente ON Cliente.iddireccion = Direccion.iddireccion
+    GROUP BY ciudad.idpais,
         ciudad.nombre
 ),
 CLIENTESPAIS as(
@@ -656,7 +656,8 @@ CLIENTESPAIS as(
     FROM Pais
         INNER JOIN Ciudad ON Ciudad.idpais = Pais.idpais
         INNER JOIN Direccion ON Direccion.idciudad = Ciudad.idciudad
-        INNER JOIN Cliente ON Cliente.iddireccion = Direccion.iddireccion GROUP BYpais.nombre,
+        INNER JOIN Cliente ON Cliente.iddireccion = Direccion.iddireccion
+    GROUP BY pais.nombre,
         pais.idpais
 )
 SELECT CLIENTESCIUDAD.nombre AS nombreciudad,
@@ -688,7 +689,8 @@ RENTACIUDAD as(
     FROM renta
         INNER JOIN cliente ON cliente.idcliente = renta.idcliente
         INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
-        INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad GROUP BYciudad.idciudad,
+        INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
+    GROUP BY ciudad.idciudad,
         ciudad.nombre,
         ciudad.idpais
 ),
@@ -696,7 +698,8 @@ CIUDADESPAIS AS (
     SELECT COUNT(*) AS cantidad,
         pais.idpais
     FROM pais
-        INNER JOIN ciudad ON ciudad.idpais = pais.idpais GROUP BYciudad.idpais,
+        INNER JOIN ciudad ON ciudad.idpais = pais.idpais
+    GROUP BY ciudad.idpais,
         pais.idpais
 )
 SELECT RENTAPAIS.nombre AS nombrepais,
@@ -761,7 +764,8 @@ RENTASCIUDADES as(
         INNER JOIN cliente ON cliente.idcliente = renta.idcliente
         INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
         INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
-        INNER JOIN pais ON ciudad.idpais = pais.idpais GROUP BYciudad.nombre,
+        INNER JOIN pais ON ciudad.idpais = pais.idpais
+    GROUP BY ciudad.nombre,
         ciudad.idciudad,
         ciudad.idpais,
         pais.nombre
@@ -775,7 +779,8 @@ RENTASDAYTON as(
     FROM renta
         INNER JOIN cliente ON cliente.idcliente = renta.idcliente
         INNER JOIN direccion ON cliente.iddireccion = direccion.iddireccion
-        INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad GROUP BYciudad.nombre,
+        INNER JOIN ciudad ON direccion.idciudad = ciudad.idciudad
+    GROUP BY ciudad.nombre,
         ciudad.idciudad,
         ciudad.idpais
     HAVING ciudad.nombre = 'Dayton'
@@ -792,7 +797,7 @@ with TOPS as(
         pais.nombre AS pais,
         categoria.categoria,
         COUNT(categoria.categoria) AS contador,
-        rownumber() over (
+        ROW_NUMBER() over (
             partition BY ciudad.nombre
             ORDER BY COUNT(categoria.categoria) desc
         ) AS rank
@@ -804,7 +809,8 @@ with TOPS as(
         INNER JOIN pelicula ON renta.idpelicula = pelicula.idpelicula
         INNER JOIN entrega ON entrega.identrega = pelicula.identrega
         INNER JOIN categoriaentrega ON categoriaentrega.identrega = entrega.identrega
-        INNER JOIN categoria ON categoriaentrega.idcategoria = categoria.idcategoria GROUP BYciudad.idciudad,
+        INNER JOIN categoria ON categoriaentrega.idcategoria = categoria.idcategoria
+    GROUP BY ciudad.idciudad,
         ciudad.nombre,
         pais.nombre,
         categoria.categoria
@@ -829,7 +835,8 @@ FROM pais
     INNER JOIN ciudad ON pais.idpais = ciudad.idpais
     INNER JOIN direccion ON ciudad.idciudad = direccion.idciudad
     INNER JOIN cliente ON cliente.iddireccion = direccion.iddireccion
-    INNER JOIN renta ON renta.idcliente = cliente.idcliente GROUP BYpais.idpais,
+    INNER JOIN renta ON renta.idcliente = cliente.idcliente
+GROUP BY pais.idpais,
     cliente.nombre,
     cliente.apellido
 ORDER BY pais.nombre;
@@ -840,6 +847,7 @@ ORDER BY pais.nombre;
         INNER JOIN ciudad ON pais.idpais = ciudad.idpais
         INNER JOIN direccion ON ciudad.idciudad = direccion.idciudad
         INNER JOIN cliente ON cliente.iddireccion = direccion.iddireccion
-        INNER JOIN renta ON renta.idcliente = cliente.idcliente GROUP BYpais.idpais
+        INNER JOIN renta ON renta.idcliente = cliente.idcliente
+    GROUP BY pais.idpais
     HAVING pais.nombre = 'India'
 );
